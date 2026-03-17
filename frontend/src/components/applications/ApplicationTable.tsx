@@ -1,11 +1,21 @@
+import { useState } from "react"
 import { api } from "@/lib/api"
-import type { Application } from "@/types/application"
+import type { Application, ApplicationStatus } from "@/types/application"
 
 type Props = {
   items: Application[]
   onEdit: (item: Application) => void
   onDeleted: () => void
 }
+
+const statusOptions: ApplicationStatus[] = [
+  "draft",
+  "sent",
+  "in_review",
+  "interview",
+  "rejected",
+  "accepted",
+]
 
 function statusClass(status: string) {
   switch (status) {
@@ -25,50 +35,104 @@ function statusClass(status: string) {
 }
 
 export function ApplicationTable({ items, onEdit, onDeleted }: Props) {
-  async function handleDelete(id: number) {
-    const confirmed = window.confirm("Delete this application?")
-    if (!confirmed) return
+  const [editingStatusId, setEditingStatusId] = useState<number | null>(null)
 
+  async function handleDelete(id: number) {
+    if (!window.confirm("Delete this application?")) return
     await api.delete(`/applications/${id}`)
     onDeleted()
   }
 
+  async function updateStatus(item: Application, newStatus: ApplicationStatus) {
+  try {
+    await api.patch(`/applications/${item.id}`, {
+      status: newStatus,
+    })
+    setEditingStatusId(null)
+    onDeleted()
+  } catch (e) {
+    console.error("Failed to update status", e)
+  }
+}
+
   return (
     <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
       <table className="min-w-full text-sm">
-        <thead className="bg-slate-50 text-left text-slate-600">
+        <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
           <tr>
-            <th className="px-4 py-3">Company</th>
-            <th className="px-4 py-3">Position</th>
-            <th className="px-4 py-3">Location</th>
-            <th className="px-4 py-3">Status</th>
-            <th className="px-4 py-3">Applied</th>
-            <th className="px-4 py-3">Actions</th>
+            <th className="px-4 py-2.5">Company</th>
+            <th className="px-4 py-2.5">Position</th>
+            <th className="px-4 py-2.5">Location</th>
+            <th className="px-4 py-2.5">Status</th>
+            <th className="px-4 py-2.5">Applied</th>
+            <th className="px-4 py-2.5">Job</th>
+            <th className="px-4 py-2.5">Actions</th>
           </tr>
         </thead>
+
         <tbody>
           {items.map((item) => (
-            <tr key={item.id} className="border-t">
-              <td className="px-4 py-3 font-medium">{item.company}</td>
-              <td className="px-4 py-3">{item.position}</td>
-              <td className="px-4 py-3">{item.location ?? "—"}</td>
-              <td className="px-4 py-3">
-                <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusClass(item.status)}`}>
-                  {item.status}
-                </span>
+            <tr key={item.id} className="border-t hover:bg-slate-50">
+              <td className="px-4 py-2.5 font-medium">{item.company}</td>
+              <td className="px-4 py-2.5">{item.position}</td>
+              <td className="px-4 py-2.5">{item.location ?? "—"}</td>
+
+              {/* STATUS */}
+              <td className="px-4 py-2.5">
+                {editingStatusId === item.id ? (
+                  <select
+                    className="rounded-lg border px-2 py-1 text-xs"
+                    value={item.status}
+                    onChange={(e) =>
+                      updateStatus(item, e.target.value as ApplicationStatus)
+                    }
+                    onBlur={() => setEditingStatusId(null)}
+                    autoFocus
+                  >
+                    {statusOptions.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span
+                    onClick={() => setEditingStatusId(item.id)}
+                    className={`cursor-pointer rounded-full px-2.5 py-1 text-xs font-medium ${statusClass(item.status)}`}
+                  >
+                    {item.status}
+                  </span>
+                )}
               </td>
-              <td className="px-4 py-3">{item.applied_date ?? "—"}</td>
-              <td className="px-4 py-3">
+
+              <td className="px-4 py-2.5">{item.applied_date ?? "—"}</td>
+
+              <td className="px-4 py-2.5">
+                {item.job_url ? (
+                  <a
+                    href={item.job_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    Open
+                  </a>
+                ) : (
+                  "—"
+                )}
+              </td>
+
+              <td className="px-4 py-2.5">
                 <div className="flex gap-2">
                   <button
                     onClick={() => onEdit(item)}
-                    className="rounded-lg border px-3 py-1.5 text-xs font-medium"
+                    className="rounded-lg border px-2.5 py-1 text-xs"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(item.id)}
-                    className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600"
+                    className="rounded-lg border border-red-200 px-2.5 py-1 text-xs text-red-600"
                   >
                     Delete
                   </button>

@@ -68,27 +68,27 @@ export function ApplicationForm({ editingItem, onSaved, onCancelEdit }: Props) {
     <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border bg-white p-6 shadow-sm">
       <div className="grid gap-4 md:grid-cols-2">
         <input
-          className="rounded-xl border px-3 py-2"
+          className="rounded-lg border px-3 py-2 text-sm"
           placeholder="Company"
           value={form.company ?? ""}
           onChange={(e) => setForm({ ...form, company: e.target.value })}
           required
         />
         <input
-          className="rounded-xl border px-3 py-2"
+          className="rounded-lg border px-3 py-2 text-sm"
           placeholder="Position"
           value={form.position ?? ""}
           onChange={(e) => setForm({ ...form, position: e.target.value })}
           required
         />
         <input
-          className="rounded-xl border px-3 py-2"
+          className="rounded-lg border px-3 py-2 text-sm"
           placeholder="Location"
           value={form.location ?? ""}
           onChange={(e) => setForm({ ...form, location: e.target.value })}
         />
         <select
-          className="rounded-xl border px-3 py-2"
+          className="rounded-lg border px-3 py-2 text-sm"
           value={form.status ?? "draft"}
           onChange={(e) => setForm({ ...form, status: e.target.value as CreateApplicationPayload["status"] })}
         >
@@ -100,13 +100,13 @@ export function ApplicationForm({ editingItem, onSaved, onCancelEdit }: Props) {
           <option value="accepted">Accepted</option>
         </select>
         <input
-          className="rounded-xl border px-3 py-2"
+          className="rounded-lg border px-3 py-2 text-sm"
           type="date"
           value={form.applied_date ?? ""}
           onChange={(e) => setForm({ ...form, applied_date: e.target.value })}
         />
         <input
-          className="rounded-xl border px-3 py-2"
+          className="rounded-lg border px-3 py-2 text-sm"
           placeholder="Job URL"
           value={form.job_url ?? ""}
           onChange={(e) => setForm({ ...form, job_url: e.target.value })}
