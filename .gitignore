@@ -14,3 +14,7 @@ dist/
 
 # OS
 .DS_Store
+
+# Gmail API Token
+backend/credentials.json
+backend/token.json
