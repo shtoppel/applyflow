@@ -1,8 +1,7 @@
 from datetime import date, datetime
 from enum import Enum
-
 from sqlalchemy import Date, DateTime, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base
 
@@ -29,3 +28,10 @@ class Application(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    events = relationship(
+        "ApplicationEvent",
+        back_populates="application",
+        cascade="all, delete-orphan",
+        order_by="desc(ApplicationEvent.created_at)",
+    )

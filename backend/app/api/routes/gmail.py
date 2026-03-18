@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
 from app.models.application import Application
+from app.models.application_event import ApplicationEvent
 from app.schemas.gmail import GmailParsedEventOut
 from app.services.application_status_service import ApplicationStatusService
 from app.services.gmail_parser import GmailRuleParser
@@ -187,6 +188,8 @@ def sync_and_update(db: Session = Depends(get_db)):
             app_by_company[app.company] = app
 
     for msg in messages:
+        gmail_message_id = msg.get("gmail_message_id")
+
         parsed = parser.parse(
             sender=msg.get("from"),
             subject=msg.get("subject"),
@@ -215,9 +218,49 @@ def sync_and_update(db: Session = Depends(get_db)):
             continue
 
         old_status = application.status
+
+        existing_detected_event = db.execute(
+            select(ApplicationEvent).where(
+                ApplicationEvent.gmail_message_id == gmail_message_id,
+                ApplicationEvent.event_type == "gmail_detected",
+            )
+        ).scalar_one_or_none()
+
+        existing_applied_event = db.execute(
+            select(ApplicationEvent).where(
+                ApplicationEvent.gmail_message_id == gmail_message_id,
+                ApplicationEvent.event_type == "gmail_status_applied",
+            )
+        ).scalar_one_or_none()
+
+        if not existing_detected_event:
+            db.add(
+                ApplicationEvent(
+                    application_id=application.id,
+                    event_type="gmail_detected",
+                    source="gmail",
+                    old_status=old_status,
+                    new_status=parsed.event,
+                    message=parsed.reason,
+                    gmail_message_id=gmail_message_id,
+                )
+            )
+
         changed = ApplicationStatusService.apply_status_if_allowed(application, parsed.event)
 
-        if changed:
+        if changed and not existing_applied_event:
+            db.add(
+                ApplicationEvent(
+                    application_id=application.id,
+                    event_type="gmail_status_applied",
+                    source="gmail",
+                    old_status=old_status,
+                    new_status=application.status,
+                    message=f"Auto-updated from email: {msg.get('subject')}",
+                    gmail_message_id=gmail_message_id,
+                )
+            )
+
             updated_items.append(
                 {
                     "application_id": application.id,
@@ -230,10 +273,7 @@ def sync_and_update(db: Session = Depends(get_db)):
                 }
             )
 
-    if updated_items:
-        db.commit()
-    else:
-        db.rollback()
+    db.commit()
 
     return {
         "detected_events": detected_items,

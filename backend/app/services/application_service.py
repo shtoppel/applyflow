@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.models.application import Application
 from app.schemas.application import ApplicationCreate, ApplicationUpdate
-
+from app.models.application_event import ApplicationEvent
 
 def _normalize_payload(data: dict) -> dict:
     if data.get("job_url") is not None:
@@ -28,9 +28,40 @@ def create_application(db: Session, payload: ApplicationCreate) -> Application:
 
 
 def update_application(db: Session, obj: Application, payload: ApplicationUpdate) -> Application:
-    data = _normalize_payload(payload.model_dump(exclude_unset=True))
-    for key, value in data.items():
-        setattr(obj, key, value)
+    old_status = obj.status
+
+    if payload.company is not None:
+        obj.company = payload.company
+
+    if payload.position is not None:
+        obj.position = payload.position
+
+    if payload.status is not None:
+        obj.status = payload.status
+
+    if payload.location is not None:
+        obj.location = payload.location
+
+    if payload.notes is not None:
+        obj.notes = payload.notes
+
+    if payload.job_url is not None:
+        obj.job_url = payload.job_url
+
+    # 🔥 лог изменения статуса
+    if old_status != obj.status:
+        db.add(
+            ApplicationEvent(
+                application_id=obj.id,
+                event_type="manual_status_change",
+                source="manual",
+                old_status=old_status,
+                new_status=obj.status,
+                message="Status changed manually by user",
+                gmail_message_id=None,
+            )
+        )
+
     db.commit()
     db.refresh(obj)
     return obj

@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react"
-import { AppShell } from "@/components/layout/AppShell"
-import { ApplicationForm } from "@/components/applications/ApplicationForm"
-import { ApplicationTable } from "@/components/applications/ApplicationTable"
-import { api } from "@/lib/api"
-import type { Application, ApplicationStatus } from "@/types/application"
+import { useEffect, useMemo, useState } from "react";
+import { AppShell } from "@/components/layout/AppShell";
+import { ApplicationForm } from "@/components/applications/ApplicationForm";
+import { ApplicationTable } from "@/components/applications/ApplicationTable";
+import { api } from "@/lib/api";
+import type { Application, ApplicationStatus } from "@/types/application";
 
 const statusOptions: { label: string; value: "all" | ApplicationStatus }[] = [
   { label: "All", value: "all" },
@@ -13,50 +13,54 @@ const statusOptions: { label: string; value: "all" | ApplicationStatus }[] = [
   { label: "Interview", value: "interview" },
   { label: "Rejected", value: "rejected" },
   { label: "Accepted", value: "accepted" },
-]
+];
 
-export default function ApplicationsPage() {
-  const [items, setItems] = useState<Application[]>([])
-  const [loading, setLoading] = useState(true)
-  const [editingItem, setEditingItem] = useState<Application | null>(null)
-  const [statusFilter, setStatusFilter] = useState<"all" | ApplicationStatus>("all")
+type ApplicationsPageProps = {
+  refreshToken: number;
+};
+
+export default function ApplicationsPage({ refreshToken }: ApplicationsPageProps) {
+  const [items, setItems] = useState<Application[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingItem, setEditingItem] = useState<Application | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"all" | ApplicationStatus>("all");
 
   async function loadApplications() {
-    setLoading(true)
+    setLoading(true);
     try {
-      const res = await api.get<Application[]>("/applications")
-      setItems(res.data)
+      const res = await api.get<Application[]>("/applications");
+      setItems(res.data);
     } catch (error) {
-      console.error("Failed to load applications:", error)
-      setItems([])
+      console.error("Failed to load applications:", error);
+      setItems([]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   function handleSaved() {
-    setEditingItem(null)
-    loadApplications()
+    setEditingItem(null);
+    loadApplications();
   }
 
   function handleCancelEdit() {
-    setEditingItem(null)
+    setEditingItem(null);
   }
 
   useEffect(() => {
-    loadApplications()
-  }, [])
+    loadApplications();
+  }, [refreshToken]);
 
   const filteredItems = useMemo(() => {
     const sorted = [...items].sort((a, b) => {
-      const dateA = a.applied_date ?? a.created_at
-      const dateB = b.applied_date ?? b.created_at
-      return new Date(dateB).getTime() - new Date(dateA).getTime()
-    })
+      const dateA = a.applied_date ?? a.created_at;
+      const dateB = b.applied_date ?? b.created_at;
+      return new Date(dateB).getTime() - new Date(dateA).getTime();
+    });
 
-    if (statusFilter === "all") return sorted
-    return sorted.filter((item) => item.status === statusFilter)
-  }, [items, statusFilter])
+    if (statusFilter === "all") return sorted;
+    return sorted.filter((item) => item.status === statusFilter);
+  }, [items, statusFilter]);
 
   return (
     <AppShell title="ApplyFlow">
@@ -114,5 +118,5 @@ export default function ApplicationsPage() {
         )}
       </div>
     </AppShell>
-  )
+  );
 }
