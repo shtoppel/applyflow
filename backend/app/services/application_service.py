@@ -46,7 +46,7 @@ def update_application(db: Session, obj: Application, payload: ApplicationUpdate
         obj.notes = payload.notes
 
     if payload.job_url is not None:
-        obj.job_url = payload.job_url
+        obj.job_url = str(payload.job_url)
 
     # 🔥 лог изменения статуса
     if old_status != obj.status:
