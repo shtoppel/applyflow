@@ -34,6 +34,11 @@ function statusClass(status: string) {
   }
 }
 
+function formatDate(dateString: string | null) {
+  if (!dateString) return "—"
+  return new Date(dateString).toLocaleDateString("de-DE")
+}
+
 export function ApplicationTable({ items, onEdit, onDeleted }: Props) {
   const [editingStatusId, setEditingStatusId] = useState<number | null>(null)
 
@@ -44,16 +49,16 @@ export function ApplicationTable({ items, onEdit, onDeleted }: Props) {
   }
 
   async function updateStatus(item: Application, newStatus: ApplicationStatus) {
-  try {
-    await api.patch(`/applications/${item.id}`, {
-      status: newStatus,
-    })
-    setEditingStatusId(null)
-    onDeleted()
-  } catch (e) {
-    console.error("Failed to update status", e)
+    try {
+      await api.patch(`/applications/${item.id}`, {
+        status: newStatus,
+      })
+      setEditingStatusId(null)
+      onDeleted()
+    } catch (e) {
+      console.error("Failed to update status", e)
+    }
   }
-}
 
   return (
     <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
@@ -64,7 +69,7 @@ export function ApplicationTable({ items, onEdit, onDeleted }: Props) {
             <th className="px-4 py-2.5">Position</th>
             <th className="px-4 py-2.5">Location</th>
             <th className="px-4 py-2.5">Status</th>
-            <th className="px-4 py-2.5">Applied</th>
+            <th className="px-4 py-2.5 min-w-[110px]">Applied</th>
             <th className="px-4 py-2.5">Job</th>
             <th className="px-4 py-2.5">Actions</th>
           </tr>
@@ -77,7 +82,6 @@ export function ApplicationTable({ items, onEdit, onDeleted }: Props) {
               <td className="px-4 py-2.5">{item.position}</td>
               <td className="px-4 py-2.5">{item.location ?? "—"}</td>
 
-              {/* STATUS */}
               <td className="px-4 py-2.5">
                 {editingStatusId === item.id ? (
                   <select
@@ -105,7 +109,9 @@ export function ApplicationTable({ items, onEdit, onDeleted }: Props) {
                 )}
               </td>
 
-              <td className="px-4 py-2.5">{item.applied_date ?? "—"}</td>
+              <td className="px-4 py-2.5 whitespace-nowrap">
+                {formatDate(item.applied_date)}
+              </td>
 
               <td className="px-4 py-2.5">
                 {item.job_url ? (

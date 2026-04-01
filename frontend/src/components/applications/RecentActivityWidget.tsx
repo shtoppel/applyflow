@@ -46,6 +46,7 @@ export default function RecentActivityWidget({
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
 
   const loadEvents = async () => {
     try {
@@ -87,101 +88,147 @@ export default function RecentActivityWidget({
     }
   };
 
+  const handleToggle = async () => {
+    const nextOpen = !isOpen;
+    setIsOpen(nextOpen);
+
+    if (nextOpen && events.length === 0 && !loading) {
+      setLoading(true);
+      await loadEvents();
+    }
+  };
+
   useEffect(() => {
     loadEvents();
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
 
     const interval = setInterval(loadEvents, 15000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isOpen]);
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-[360px] max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200 bg-white shadow-xl">
-      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-        <div>
-          <h3 className="text-sm font-semibold text-slate-800">
+    <div
+      className={`fixed bottom-4 right-4 z-50 rounded-2xl border border-slate-200 bg-white shadow-xl transition-all ${
+        isOpen
+          ? "w-[360px] max-w-[calc(100vw-2rem)]"
+          : "w-[260px] max-w-[calc(100vw-2rem)]"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-3 px-4 py-3">
+        <div className="min-w-0">
+          <h3 className="truncate text-sm font-semibold text-slate-800">
             Recent activity
+            {!loading && events.length > 0 ? ` (${events.length})` : ""}
           </h3>
-          <p className="text-xs text-slate-500">
+          <p className="truncate text-xs text-slate-500">
             Manual and Gmail-driven updates
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleRefreshClick}
-            className="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50"
-          >
-            Refresh
-          </button>
-
-          <button
-            onClick={handleSyncClick}
-            disabled={syncing}
-            className="rounded-lg border border-blue-200 bg-blue-50 px-2 py-1 text-xs text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {syncing ? "Syncing..." : "Sync Gmail"}
-          </button>
-        </div>
+        <button
+          onClick={handleToggle}
+          className="shrink-0 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50"
+        >
+          {isOpen ? "Hide" : "Show"}
+        </button>
       </div>
 
-      <div className="max-h-[420px] overflow-y-auto p-3">
-        {loading ? (
-          <div className="text-sm text-slate-500">Loading activity...</div>
-        ) : error ? (
-          <div className="text-sm text-red-500">{error}</div>
-        ) : events.length === 0 ? (
-          <div className="text-sm text-slate-500">No activity yet.</div>
-        ) : (
-          <div className="space-y-3">
-            {events.map((event) => (
-              <div
-                key={event.id}
-                className="rounded-xl border border-slate-100 bg-slate-50 p-3"
+      {isOpen && (
+        <>
+          <div className="flex items-center justify-between gap-2 border-t border-b border-slate-100 px-4 py-3">
+            <div className="text-xs text-slate-500">
+              {loading ? "Loading..." : `${events.length} item(s)`}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleRefreshClick}
+                className="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50"
               >
-                <div className="mb-2 flex items-start justify-between gap-2">
-                  <div>
-                    <div className="text-sm font-medium text-slate-800">
-                      {formatEventTitle(event)}
-                    </div>
+                Refresh
+              </button>
 
-                    <div className="text-xs text-slate-500">
-                      {formatTime(event.created_at)}
-                    </div>
-                  </div>
-
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${sourceBadgeClass(
-                      event.source
-                    )}`}
-                  >
-                    {event.source}
-                  </span>
-                </div>
-
-                {(event.company || event.position) && (
-                  <div className="mb-2 text-xs text-slate-600">
-                    {[event.company, event.position].filter(Boolean).join(" — ")}
-                  </div>
-                )}
-
-                {(event.old_status || event.new_status) && (
-                  <div className="mb-2 text-xs text-slate-700">
-                    <span className="font-medium">{event.old_status ?? "—"}</span>
-                    <span className="mx-1">→</span>
-                    <span className="font-medium">{event.new_status ?? "—"}</span>
-                  </div>
-                )}
-
-                {event.message && (
-                  <div className="text-xs leading-5 text-slate-600">
-                    {event.message}
-                  </div>
-                )}
-              </div>
-            ))}
+              <button
+                onClick={handleSyncClick}
+                disabled={syncing}
+                className="rounded-lg border border-blue-200 bg-blue-50 px-2 py-1 text-xs text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {syncing ? "Syncing..." : "Sync Gmail"}
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+
+          <div className="max-h-[420px] overflow-y-auto p-3">
+            {loading ? (
+              <div className="text-sm text-slate-500">Loading activity...</div>
+            ) : error ? (
+              <div className="text-sm text-red-500">{error}</div>
+            ) : events.length === 0 ? (
+              <div className="text-sm text-slate-500">No activity yet.</div>
+            ) : (
+              <div className="space-y-3">
+                {events.map((event) => (
+                  <div
+                    key={event.id}
+                    className="rounded-xl border border-slate-100 bg-slate-50 p-3"
+                  >
+                    <div className="mb-2 flex items-start justify-between gap-2">
+                      <div>
+                        <div className="text-sm font-medium text-slate-800">
+                          {formatEventTitle(event)}
+                        </div>
+
+                        <div className="text-xs text-slate-500">
+                          {formatTime(event.created_at)}
+                        </div>
+                      </div>
+
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${sourceBadgeClass(
+                          event.source
+                        )}`}
+                      >
+                        {event.source}
+                      </span>
+                    </div>
+
+                    {(event.company || event.position) && (
+                      <div className="mb-2 text-xs text-slate-600">
+                        {[event.company, event.position]
+                          .filter(Boolean)
+                          .join(" — ")}
+                      </div>
+                    )}
+
+                    {(event.old_status || event.new_status) && (
+                      <div className="mb-2 text-xs text-slate-700">
+                        <span className="font-medium">
+                          {event.old_status ?? "—"}
+                        </span>
+                        <span className="mx-1">→</span>
+                        <span className="font-medium">
+                          {event.new_status ?? "—"}
+                        </span>
+                      </div>
+                    )}
+
+                    {event.message && (
+                      <div className="text-xs leading-5 text-slate-600">
+                        {event.message}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 # ApplyFlow
 
-ApplyFlow is a fullstack web application for tracking job applications and automating status updates from Gmail.
+gApplyFlow is a fullstack web application for tracking job applications and automating status updates from Gmail.
 
 ## Features
 - Track job applications

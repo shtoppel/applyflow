@@ -8,12 +8,16 @@ type Props = {
   onCancelEdit: () => void
 }
 
+function getTodayDate(): string {
+  return new Date().toISOString().split("T")[0]
+}
+
 const initialState: CreateApplicationPayload = {
   company: "",
   position: "",
   location: "",
   status: "draft",
-  applied_date: "",
+  applied_date: getTodayDate(),
   job_url: "",
   notes: "",
 }
@@ -34,7 +38,10 @@ export function ApplicationForm({ editingItem, onSaved, onCancelEdit }: Props) {
         notes: editingItem.notes ?? "",
       })
     } else {
-      setForm(initialState)
+      setForm({
+        ...initialState,
+        applied_date: getTodayDate(),
+      })
     }
   }, [editingItem])
 
@@ -57,7 +64,11 @@ export function ApplicationForm({ editingItem, onSaved, onCancelEdit }: Props) {
         await api.post("/applications", payload)
       }
 
-      setForm(initialState)
+      setForm({
+        ...initialState,
+        applied_date: getTodayDate(),
+      })
+
       onSaved()
     } finally {
       setLoading(false)
@@ -90,7 +101,12 @@ export function ApplicationForm({ editingItem, onSaved, onCancelEdit }: Props) {
         <select
           className="rounded-lg border px-3 py-2 text-sm"
           value={form.status ?? "draft"}
-          onChange={(e) => setForm({ ...form, status: e.target.value as CreateApplicationPayload["status"] })}
+          onChange={(e) =>
+            setForm({
+              ...form,
+              status: e.target.value as CreateApplicationPayload["status"],
+            })
+          }
         >
           <option value="draft">Draft</option>
           <option value="sent">Sent</option>

@@ -1,5 +1,6 @@
 from datetime import date, datetime
 from enum import Enum
+
 from sqlalchemy import Date, DateTime, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -19,19 +20,41 @@ class Application(Base):
     __tablename__ = "applications"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
+
     company: Mapped[str] = mapped_column(String(255), index=True)
     position: Mapped[str] = mapped_column(String(255))
+
     location: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    status: Mapped[str] = mapped_column(String(50), default=ApplicationStatus.draft.value)
+
+    status: Mapped[str] = mapped_column(
+        String(50),
+        default=ApplicationStatus.draft.value,
+        index=True,
+    )
+
     applied_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+
     job_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+    )
+
+    # Relationship to events
     events = relationship(
         "ApplicationEvent",
         back_populates="application",
         cascade="all, delete-orphan",
         order_by="desc(ApplicationEvent.created_at)",
     )
+
+    def __repr__(self) -> str:
+        return f"<Application id={self.id} company={self.company} status={self.status}>"
